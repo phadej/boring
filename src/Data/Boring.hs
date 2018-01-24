@@ -2,6 +2,8 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs            #-}
 {-# LANGUAGE TypeOperators    #-}
+{-# LANGUAGE ConstraintKinds  #-}
+{-# LANGUAGE UndecidableInstances #-}
 -- | 'Boring' and 'Absurd' classes. One approach.
 --
 -- Different approach would be to have
@@ -58,10 +60,15 @@ module Data.Boring (
 
 import Control.Applicative   (Const (..))
 import Data.Functor.Identity (Identity (..))
+import Data.Functor.Compose  (Compose (..))
+import Data.Functor.Product  (Product (..))
+import Data.Functor.Sum      (Sum (..))
 import Data.Functor.Rep      (Representable (..))
+import Data.Constraint       (Dict (..))
 import Data.List.NonEmpty    (NonEmpty (..))
 import Data.Proxy            (Proxy (..))
 import Data.Tagged           (Tagged (..))
+import Data.Stream.Infinite  (Stream (..))
 
 import qualified Data.Void as V
 
@@ -117,11 +124,20 @@ instance Boring (Proxy a) where
 instance Boring a => Boring (Const a b) where
     boring = Const boring
 
-instance  Boring b => Boring (Tagged a b) where
+instance Boring b => Boring (Tagged a b) where
     boring = Tagged boring
 
 instance Boring a => Boring (Identity a) where
     boring = Identity boring
+
+instance Boring (f (g a)) => Boring (Compose f g a) where
+    boring = Compose boring
+
+instance (Boring (f a), Boring (g a)) => Boring (Product f g a) where
+    boring = Pair boring boring
+
+instance c => Boring (Dict c) where
+    boring = Dict
 
 instance (Boring a, Boring b) => Boring (a, b) where
     boring = (boring, boring)
@@ -134,6 +150,9 @@ instance (Boring a, Boring b, Boring c, Boring d) => Boring (a, b, c, d) where
 
 instance (Boring a, Boring b, Boring c, Boring d, Boring e) => Boring (a, b, c, d, e) where
     boring = (boring, boring, boring, boring, boring)
+
+instance Boring a => Boring (Stream a) where
+    boring = boring :> boring
 
 -- | Recall regular expressions, kleene star of empty regexp is epsilon!
 instance Absurd a => Boring [a] where
@@ -172,8 +191,18 @@ instance (Absurd a, Absurd b) => Absurd (Either a b) where
 instance Absurd a => Absurd (NonEmpty a) where
     absurd (x :| _) = absurd x
 
+instance Absurd a => Absurd (Stream a) where
+    absurd (x :> _) = absurd x
+
 instance Absurd a => Absurd (Identity a) where
     absurd = absurd . runIdentity
+
+instance Absurd (f (g a)) => Absurd (Compose f g a) where
+    absurd = absurd . getCompose
+
+instance (Absurd (f a), Absurd (g a)) => Absurd (Sum f g a) where
+    absurd (InL fa) = absurd fa
+    absurd (InR ga) = absurd ga
 
 -------------------------------------------------------------------------------
 -- More interesting stuff
