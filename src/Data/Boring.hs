@@ -1,4 +1,5 @@
 {-# LANGUAGE CPP              #-}
+{-# LANGUAGE DataKinds        #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs            #-}
 {-# LANGUAGE TypeOperators    #-}
@@ -56,7 +57,12 @@ module Data.Boring (
     vacuous,
     boringRep,
     untainted,
+    devoid,
+    united,
     ) where
+
+import Prelude ()
+import Prelude.Compat
 
 import Control.Applicative   (Const (..))
 import Data.Functor.Identity (Identity (..))
@@ -70,7 +76,12 @@ import Data.Proxy            (Proxy (..))
 import Data.Tagged           (Tagged (..))
 import Data.Stream.Infinite  (Stream (..))
 
-import qualified Data.Void as V
+import qualified Data.Fin      as Fin
+import qualified Data.Nat      as Nat
+import qualified Data.Vec.Lazy as Vec
+import qualified Data.Vec.Pull as Vec.Pull
+import qualified Data.Void     as V
+import qualified Generics.SOP  as SOP
 
 #if MIN_VERSION_base(4,7,0)
 import qualified Data.Type.Equality as Eq
@@ -101,7 +112,7 @@ import qualified Data.Type.Equality as Eq
 -- @('Boring' a, 'Absurd' b) => Either a b@ and
 -- @('Absurd' a, 'Boring' b) => Either a b@ would be valid instances.
 --
--- Another useful trick, is that you can rewrite computations with 
+-- Another useful trick, is that you can rewrite computations with
 -- 'Boring' results, for example @foo :: Int -> ()@, __if__ you are sure
 -- that @foo@ is __total__.
 --
@@ -129,6 +140,12 @@ instance Boring b => Boring (Tagged a b) where
 
 instance Boring a => Boring (Identity a) where
     boring = Identity boring
+
+instance Boring a => Boring (SOP.I a) where
+    boring = SOP.I boring
+
+instance Boring b => Boring (SOP.K b a) where
+    boring = SOP.K boring
 
 instance Boring (f (g a)) => Boring (Compose f g a) where
     boring = Compose boring
@@ -168,6 +185,15 @@ instance a ~ b => Boring (a Eq.:~: b) where
     boring = Eq.Refl
 #endif
 
+instance n ~ 'Nat.Z => Boring (Vec.Vec n a) where
+    boring = Vec.empty
+
+instance n ~ 'Nat.Z => Boring (Vec.Pull.Vec n a) where
+    boring = Vec.Pull.empty
+
+instance n ~ ('Nat.S 'Nat.Z) => Boring (Fin.Fin n) where
+    boring = Fin.boring
+
 -------------------------------------------------------------------------------
 -- Absurd
 -------------------------------------------------------------------------------
@@ -204,6 +230,21 @@ instance (Absurd (f a), Absurd (g a)) => Absurd (Sum f g a) where
     absurd (InL fa) = absurd fa
     absurd (InR ga) = absurd ga
 
+instance Absurd b => Absurd (Const b a) where
+    absurd = absurd . getConst
+
+instance Absurd a => Absurd (Tagged b a) where
+    absurd = absurd . unTagged
+
+instance Absurd a => Absurd (SOP.I a) where
+    absurd = absurd . SOP.unI
+
+instance Absurd b => Absurd (SOP.K b a) where
+    absurd = absurd . SOP.unK
+
+instance n ~ 'Nat.Z => Absurd (Fin.Fin n) where
+    absurd = Fin.absurd
+
 -------------------------------------------------------------------------------
 -- More interesting stuff
 -------------------------------------------------------------------------------
@@ -222,3 +263,20 @@ boringRep = tabulate absurd
 -- See also @Settable@ class in @lens@.
 untainted :: (Representable f, Boring (Rep f)) => f a -> a
 untainted = flip index boring
+
+-- | There is a field for every type in the 'Absurd'. Very zen.
+--
+-- @
+-- 'devoid' :: 'Absurd' s => Over p f s s a b
+-- @
+-- type Over p f s t a b = p a (f b) -> s -> f t
+devoid :: Absurd s => p a (f b) -> s -> f s
+devoid _ = absurd
+
+-- | We can always retrieve a 'Boring' value from any type.
+--
+-- @
+-- 'united' :: 'Boring' a => Lens' s a
+-- @
+united :: (Boring a, Functor f) => (a -> f a) -> s -> f s
+united f v = v <$ f boring
