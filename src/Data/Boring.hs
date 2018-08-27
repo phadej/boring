@@ -84,6 +84,8 @@ import qualified Data.Void     as V
 import qualified Generics.SOP  as SOP
 
 #if MIN_VERSION_base(4,7,0)
+import qualified Data.Coerce        as Co
+import qualified Data.Type.Coercion as Co
 import qualified Data.Type.Equality as Eq
 #endif
 
@@ -180,9 +182,19 @@ instance Absurd a => Boring (Maybe a) where
     boring = Nothing
 
 #if MIN_VERSION_base(4,7,0)
--- | Type equality is 'Boring' too.
+-- | Coercibility is 'Boring' too.
+instance Co.Coercible a b => Boring (Co.Coercion a b) where
+    boring = Co.Coercion
+
+-- | Homogeneous type equality is 'Boring' too.
 instance a ~ b => Boring (a Eq.:~: b) where
     boring = Eq.Refl
+
+# if MIN_VERSION_base(4,12,0)
+-- | Heterogeneous type equality is 'Boring' too.
+instance a Eq.~~ b => Boring (a Eq.:~~: b) where
+    boring = Eq.HRefl
+# endif
 #endif
 
 instance n ~ 'Nat.Z => Boring (Vec.Vec n a) where
