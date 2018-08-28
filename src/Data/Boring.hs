@@ -1,5 +1,6 @@
 {-# LANGUAGE CPP              #-}
 {-# LANGUAGE DataKinds        #-}
+{-# LANGUAGE EmptyCase        #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs            #-}
 {-# LANGUAGE TypeOperators    #-}
@@ -75,6 +76,7 @@ import Data.List.NonEmpty    (NonEmpty (..))
 import Data.Proxy            (Proxy (..))
 import Data.Tagged           (Tagged (..))
 import Data.Stream.Infinite  (Stream (..))
+import GHC.Generics   hiding (Rep)
 
 import qualified Data.Fin      as Fin
 import qualified Data.Nat      as Nat
@@ -206,6 +208,27 @@ instance n ~ 'Nat.Z => Boring (Vec.Pull.Vec n a) where
 instance n ~ ('Nat.S 'Nat.Z) => Boring (Fin.Fin n) where
     boring = Fin.boring
 
+instance Boring (U1 p) where
+    boring = U1
+
+instance Boring c => Boring (K1 i c p) where
+    boring = K1 boring
+
+instance Boring (f p) => Boring (M1 i c f p) where
+    boring = M1 boring
+
+instance (Boring (f p), Boring (g p)) => Boring ((f :*: g) p) where
+    boring = boring :*: boring
+
+instance Boring p => Boring (Par1 p) where
+    boring = Par1 boring
+
+instance Boring (f p) => Boring (Rec1 f p) where
+    boring = Rec1 boring
+
+instance Boring (f (g p)) => Boring ((f :.: g) p) where
+    boring = Comp1 boring
+
 -------------------------------------------------------------------------------
 -- Absurd
 -------------------------------------------------------------------------------
@@ -256,6 +279,28 @@ instance Absurd b => Absurd (SOP.K b a) where
 
 instance n ~ 'Nat.Z => Absurd (Fin.Fin n) where
     absurd = Fin.absurd
+
+instance Absurd (V1 p) where
+    absurd v = case v of {}
+
+instance Absurd c => Absurd (K1 i c p) where
+    absurd = absurd . unK1
+
+instance Absurd (f p) => Absurd (M1 i c f p) where
+    absurd = absurd . unM1
+
+instance (Absurd (f p), Absurd (g p)) => Absurd ((f :+: g) p) where
+    absurd (L1 a) = absurd a
+    absurd (R1 b) = absurd b
+
+instance Absurd p => Absurd (Par1 p) where
+    absurd = absurd . unPar1
+
+instance Absurd (f p) => Absurd (Rec1 f p) where
+    absurd = absurd . unRec1
+
+instance Absurd (f (g p)) => Absurd ((f :.: g) p) where
+    absurd = absurd . unComp1
 
 -------------------------------------------------------------------------------
 -- More interesting stuff
