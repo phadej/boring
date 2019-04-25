@@ -1,5 +1,10 @@
 # Revision history for boring
 
+## 0.1.1
+
+- Add `GHC.Generics` instances
+- Add `:~~:` and `Coercion` instances
+
 ## 0.1
 
 - `streams`, `constraints`, `generics-sop` instances.
