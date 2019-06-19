@@ -1,5 +1,10 @@
 # Revision history for boring
 
+## 0.1.2
+
+- Add instances for 'Boring' instances for 'SBool', 'SNat' and 'LE'.
+- Add 'Boring (Dec a)', 'boringYes' and 'boringNo'.
+
 ## 0.1.1
 
 - Add `GHC.Generics` instances

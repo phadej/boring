@@ -5,6 +5,7 @@
 {-# LANGUAGE GADTs            #-}
 {-# LANGUAGE TypeOperators    #-}
 {-# LANGUAGE ConstraintKinds  #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE UndecidableInstances #-}
 -- | 'Boring' and 'Absurd' classes. One approach.
 --
@@ -54,12 +55,17 @@ module Data.Boring (
     -- * Classes
     Boring (..),
     Absurd (..),
-    -- * More integeresting stuff
+    -- * More interesting stuff
     vacuous,
     boringRep,
     untainted,
     devoid,
     united,
+    -- ** Dec
+    --
+    -- | @'Dec' a@ can be 'Boring' in two ways: When 'a' is 'Boring' or 'Absurd'.
+    boringYes,
+    absurdNo,
     ) where
 
 import Prelude ()
@@ -75,15 +81,20 @@ import Data.Constraint       (Dict (..))
 import Data.List.NonEmpty    (NonEmpty (..))
 import Data.Proxy            (Proxy (..))
 import Data.Tagged           (Tagged (..))
+import Data.Type.Dec         (Dec (..), Decidable (..))
 import Data.Stream.Infinite  (Stream (..))
 import GHC.Generics   hiding (Rep)
 
-import qualified Data.Fin      as Fin
-import qualified Data.Nat      as Nat
-import qualified Data.Vec.Lazy as Vec
-import qualified Data.Vec.Pull as Vec.Pull
-import qualified Data.Void     as V
-import qualified Generics.SOP  as SOP
+import qualified Data.Fin                  as Fin
+import qualified Data.Nat                  as Nat
+import qualified Data.Singletons.Bool      as Bool
+import qualified Data.Type.Nat             as Nat
+import qualified Data.Type.Nat.LE          as ZeroSucc
+import qualified Data.Type.Nat.LE.ReflStep as ReflStep
+import qualified Data.Vec.Lazy             as Vec
+import qualified Data.Vec.Pull             as Vec.Pull
+import qualified Data.Void                 as V
+import qualified Generics.SOP              as SOP
 
 #if MIN_VERSION_base(4,7,0)
 import qualified Data.Coerce        as Co
@@ -199,6 +210,10 @@ instance a Eq.~~ b => Boring (a Eq.:~~: b) where
 # endif
 #endif
 
+-------------------------------------------------------------------------------
+-- vec + fin + singleton-bool
+-------------------------------------------------------------------------------
+
 instance n ~ 'Nat.Z => Boring (Vec.Vec n a) where
     boring = Vec.empty
 
@@ -207,6 +222,28 @@ instance n ~ 'Nat.Z => Boring (Vec.Pull.Vec n a) where
 
 instance n ~ ('Nat.S 'Nat.Z) => Boring (Fin.Fin n) where
     boring = Fin.boring
+
+-- singletons are boring
+
+-- | @since 0.1.3
+instance Nat.SNatI n => Boring (Nat.SNat n) where
+    boring = Nat.snat
+
+-- | @since 0.1.3
+instance Bool.SBoolI b => Boring (Bool.SBool b) where
+    boring = Bool.sbool
+
+-- | @since 0.1.3
+instance ZeroSucc.LE n m => Boring (ZeroSucc.LEProof n m) where
+    boring = ZeroSucc.leProof
+
+-- | @since 0.1.3
+instance (ZeroSucc.LE n m, Nat.SNatI m) => Boring (ReflStep.LEProof n m) where
+    boring = ReflStep.fromZeroSucc ZeroSucc.leProof
+
+-------------------------------------------------------------------------------
+-- Generics
+-------------------------------------------------------------------------------
 
 instance Boring (U1 p) where
     boring = U1
@@ -280,6 +317,16 @@ instance Absurd b => Absurd (SOP.K b a) where
 instance n ~ 'Nat.Z => Absurd (Fin.Fin n) where
     absurd = Fin.absurd
 
+instance (ZeroSucc.LE m n, n' ~ 'Nat.S n) => Absurd (ZeroSucc.LEProof n' m) where
+    absurd = ZeroSucc.leSwap' ZeroSucc.leProof
+
+instance (ZeroSucc.LE m n, n' ~ 'Nat.S n, Nat.SNatI n) => Absurd (ReflStep.LEProof n' m) where
+    absurd = ZeroSucc.leSwap' ZeroSucc.leProof . ReflStep.toZeroSucc
+
+-------------------------------------------------------------------------------
+-- Generics
+-------------------------------------------------------------------------------
+
 instance Absurd (V1 p) where
     absurd v = case v of {}
 
@@ -337,3 +384,25 @@ devoid _ = absurd
 -- @
 united :: (Boring a, Functor f) => (a -> f a) -> s -> f s
 united f v = v <$ f boring
+
+-------------------------------------------------------------------------------
+-- Dec
+-------------------------------------------------------------------------------
+
+-- | This relies on the fact that @a@ is /proposition/ in h-Prop sense.
+--
+-- @since 0.1.3
+instance Decidable a => Boring (Dec a) where
+    boring = decide
+
+-- | 'Yes', it's 'boring'.
+--
+-- @since 0.1.3
+boringYes :: Boring a => Dec a
+boringYes = Yes boring
+
+-- | 'No', it's 'absurd'.
+--
+-- @since 0.1.3
+absurdNo :: Absurd a => Dec a
+absurdNo = No absurd
