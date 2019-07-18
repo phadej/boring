@@ -1,9 +1,10 @@
-{-# LANGUAGE CPP              #-}
-{-# LANGUAGE EmptyCase        #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE GADTs            #-}
-{-# LANGUAGE Trustworthy      #-}
-{-# LANGUAGE TypeOperators    #-}
+{-# LANGUAGE CPP               #-}
+{-# LANGUAGE DefaultSignatures #-}
+{-# LANGUAGE EmptyCase         #-}
+{-# LANGUAGE FlexibleContexts  #-}
+{-# LANGUAGE GADTs             #-}
+{-# LANGUAGE Trustworthy       #-}
+{-# LANGUAGE TypeOperators     #-}
 -- | 'Boring' and 'Absurd' classes. One approach.
 --
 -- Different approach would be to have
@@ -52,6 +53,9 @@ module Data.Boring (
     -- * Classes
     Boring (..),
     Absurd (..),
+    -- ** Generic implementation
+    GBoring,
+    GAbsurd,
     -- * More interesting stuff
     vacuous,
     devoid,
@@ -67,7 +71,9 @@ import Data.Functor.Product  (Product (..))
 import Data.Functor.Sum      (Sum (..))
 import Data.List.NonEmpty    (NonEmpty (..))
 import Data.Proxy            (Proxy (..))
-import GHC.Generics          hiding (Rep)
+import GHC.Generics
+       (Generic (..), K1 (..), M1 (..), Par1 (..), Rec1 (..), U1 (..), V1,
+       (:*:) (..), (:+:) (..), (:.:) (..))
 
 import qualified Data.Void as V
 
@@ -80,8 +86,12 @@ import qualified Type.Reflection as Typeable
 #endif
 
 #ifdef MIN_VERSION_tagged
-import Data.Tagged           (Tagged (..))
+import Data.Tagged (Tagged (..))
 #endif
+
+-- $setup
+-- >>> :set -XDeriveGeneric
+-- >>> import GHC.Generics (Generic)
 
 -------------------------------------------------------------------------------
 -- Boring
@@ -118,6 +128,8 @@ import Data.Tagged           (Tagged (..))
 --
 class Boring a where
     boring :: a
+    default boring :: (Generic a, GBoring (Rep a)) => a
+    boring = to gboring
 
 instance Boring () where
     boring = ()
@@ -209,6 +221,7 @@ instance Boring (f p) => Boring (Rec1 f p) where
 instance Boring (f (g p)) => Boring ((f :.: g) p) where
     boring = Comp1 boring
 
+
 -------------------------------------------------------------------------------
 -- Absurd
 -------------------------------------------------------------------------------
@@ -221,6 +234,8 @@ instance Boring (f (g p)) => Boring ((f :.: g) p) where
 -- so we don't have 'Absurd' instances for tuples.
 class Absurd a where
     absurd :: a -> b
+    default absurd :: (Generic a, GAbsurd (Rep a)) => a -> b
+    absurd = gabsurd . from
 
 instance Absurd V.Void where
     absurd = V.absurd
@@ -301,3 +316,70 @@ devoid _ = absurd
 -- @
 united :: (Boring a, Functor f) => (a -> f a) -> s -> f s
 united f v = v <$ f boring
+
+-------------------------------------------------------------------------------
+-- default implementatiosn
+-------------------------------------------------------------------------------
+
+-- | A helper class to implement 'Generic' derivation of 'Boring'.
+--
+-- Technically we could do (avoiding @QuantifiedConstraints@):
+--
+-- @
+-- type GBoring f = (Boring (f V.Void), Functor f)
+--
+-- gboring :: forall f x. GBoring f => f x
+-- gboring = vacuous (boring :: f V.Void)
+-- @
+--
+-- but separate class is cleaner.
+--
+-- >>> data B2 = B2 () () deriving (Show, Generic)
+-- >>> instance Boring B2
+-- >>> boring :: B2
+-- B2 () ()
+--
+class GBoring f where
+    gboring :: f a
+
+instance GBoring U1 where
+    gboring = U1
+
+instance GBoring f => GBoring (M1 i c f) where
+    gboring = M1 gboring
+
+instance (GBoring f, GBoring g) => GBoring (f :*: g) where
+    gboring = gboring :*: gboring
+
+-- There are two valid instances for GBoring (f :+: g), so we don't define
+-- either of them.
+
+instance Boring c => GBoring (K1 i c) where
+    gboring = K1 boring
+
+-- | A helper class to implement of 'Generic' derivation of 'Absurd'.
+--
+-- @
+-- type GAbsurd f = (Absurd (f ()), Functor f)
+--
+-- gabsurd :: forall f x y. GAbsurd f => f x -> y
+-- gabsurd = absurd . void
+-- @
+--
+class GAbsurd f where
+    gabsurd :: f a -> b
+
+instance GAbsurd V1 where
+    gabsurd x = case x of {}
+
+instance GAbsurd f => GAbsurd (M1 i c f) where
+    gabsurd (M1 x) = gabsurd x
+
+instance Absurd c => GAbsurd (K1 i c) where
+    gabsurd (K1 x) = absurd x
+
+instance (GAbsurd f, GAbsurd g) => GAbsurd (f :+: g) where
+    gabsurd (L1 x) = gabsurd x
+    gabsurd (R1 y) = gabsurd y
+
+-- There are two reasonable instances for GAbsurd (f :*: g), so we define neither

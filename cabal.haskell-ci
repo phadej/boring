@@ -1,4 +1,5 @@
 branches: master
+docspec:  True
 
 constraint-set no-tagged
   constraints: boring -tagged

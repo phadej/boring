@@ -63,6 +63,7 @@ library
 
   other-extensions:
     CPP
+    DefaultSignatures
     EmptyCase
     FlexibleContexts
     GADTs
