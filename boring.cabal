@@ -43,6 +43,7 @@ library
     , transformers         >=0.3     && <0.6
     , transformers-compat  >=0.5     && <0.7
     , vec                  >=0.1     && <0.2
+    , vinyl
 
   if !impl(ghc >=8.0)
     build-depends: semigroups >=0.18.5 && <0.20

@@ -2,6 +2,7 @@
 {-# LANGUAGE DataKinds        #-}
 {-# LANGUAGE EmptyCase        #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs            #-}
 {-# LANGUAGE TypeOperators    #-}
 {-# LANGUAGE ConstraintKinds  #-}
@@ -80,9 +81,10 @@ import Data.Functor.Rep      (Representable (..))
 import Data.Constraint       (Dict (..))
 import Data.List.NonEmpty    (NonEmpty (..))
 import Data.Proxy            (Proxy (..))
+import Data.Stream.Infinite  (Stream (..))
 import Data.Tagged           (Tagged (..))
 import Data.Type.Dec         (Dec (..), Decidable (..))
-import Data.Stream.Infinite  (Stream (..))
+import Data.Vinyl.Core       (Rec (..))
 import GHC.Generics   hiding (Rep)
 
 import qualified Data.Fin                  as Fin
@@ -406,3 +408,13 @@ boringYes = Yes boring
 -- @since 0.1.3
 absurdNo :: Absurd a => Dec a
 absurdNo = No absurd
+
+-------------------------------------------------------------------------------
+-- Rec
+-------------------------------------------------------------------------------
+
+instance Boring (Rec f '[]) where
+  boring = RNil
+
+instance (Boring (f a), Boring (Rec f as)) => Boring (Rec f (a ': as)) where
+  boring = boring :& boring
