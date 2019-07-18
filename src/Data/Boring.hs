@@ -1,5 +1,6 @@
 {-# LANGUAGE CPP              #-}
 {-# LANGUAGE DataKinds        #-}
+{-# LANGUAGE DefaultSignatures #-}
 {-# LANGUAGE EmptyCase        #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs            #-}
@@ -84,6 +85,7 @@ import Data.Tagged           (Tagged (..))
 import Data.Type.Dec         (Dec (..), Decidable (..))
 import Data.Stream.Infinite  (Stream (..))
 import GHC.Generics   hiding (Rep)
+import qualified GHC.Generics              as G
 
 import qualified Data.Fin                  as Fin
 import qualified Data.Nat                  as Nat
@@ -137,6 +139,8 @@ import qualified Data.Type.Equality as Eq
 --
 class Boring a where
     boring :: a
+    default boring :: (Generic a, GBoring (G.Rep a)) => a
+    boring = G.to gboring
 
 instance Boring () where
     boring = ()
@@ -185,6 +189,24 @@ instance (Boring a, Boring b, Boring c, Boring d, Boring e) => Boring (a, b, c, 
 
 instance Boring a => Boring (Stream a) where
     boring = boring :> boring
+
+class GBoring f where
+  gboring :: f a
+
+instance GBoring U1 where
+  gboring = U1
+
+instance GBoring f => GBoring (M1 i c f) where
+  gboring = M1 gboring
+
+instance (GBoring f, GBoring g) => GBoring (f :*: g) where
+  gboring = gboring :*: gboring
+
+-- There are two valid instances for GBoring (f :+: g), so we don't define
+-- either of them.
+
+instance Boring c => GBoring (K1 i c) where
+  gboring = K1 boring
 
 -- | Recall regular expressions, kleene star of empty regexp is epsilon!
 instance Absurd a => Boring [a] where
@@ -278,6 +300,26 @@ instance Boring (f (g p)) => Boring ((f :.: g) p) where
 -- so we don't have 'Absurd' instances for tuples.
 class Absurd a where
     absurd :: a -> b
+    default absurd :: (Generic a, GAbsurd (G.Rep a)) => a -> b
+    absurd = gabsurd . from
+
+class GAbsurd f where
+  gabsurd :: f a -> b
+
+instance GAbsurd V1 where
+  gabsurd x = case x of {}
+
+instance GAbsurd f => GAbsurd (M1 i c f) where
+  gabsurd (M1 x) = gabsurd x
+
+instance Absurd c => GAbsurd (K1 i c) where
+  gabsurd (K1 x) = absurd x
+
+instance (GAbsurd f, GAbsurd g) => GAbsurd (f :+: g) where
+  gabsurd (L1 x) = gabsurd x
+  gabsurd (R1 y) = gabsurd y
+
+-- There are two reasonable instances for GAbsurd (f :*: g), so we define neither
 
 instance Absurd V.Void where
     absurd = V.absurd
