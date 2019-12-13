@@ -1,6 +1,5 @@
 name:               boring
-version:            0.1.2
-x-revision:         3
+version:            0.1.3
 synopsis:           Boring and Absurd types
 description:
   * @Boring@ types are isomorphic to @()@.
@@ -39,16 +38,18 @@ library
       adjunctions          >=4.4     && <4.5
     , base                 >=4.7     && <4.14
     , base-compat          >=0.10.5  && <0.12
+    , bin                  >=0.1     && <0.2
     , constraints          ==0.4.1.3 || >=0.10 && <0.12
     , dec                  >=0.0.3   && <0.1
     , fin                  >=0.0.3   && <0.2
     , generics-sop         >=0.3.2.0 && <0.6
+    , ral                  >=0.1     && <0.2
     , singleton-bool       >=0.1.4   && <0.2
     , streams              >=3.3     && <3.4
     , tagged               >=0.8.6   && <0.9
     , transformers         >=0.3     && <0.6
     , transformers-compat  >=0.5     && <0.7
-    , vec                  >=0.1     && <0.3
+    , vec                  >=0.1     && <0.4
 
   if !impl(ghc >=8.0)
     build-depends: semigroups >=0.18.5 && <0.20

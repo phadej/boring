@@ -1,5 +1,10 @@
 # Revision history for boring
 
+## 0.1.3
+
+- Allow `vec-0.3`
+- Add instances for `ral` and `bin` types.
+
 ## 0.1.2
 
 - Add instances for 'Boring' instances for 'SBool', 'SNat' and 'LE'.

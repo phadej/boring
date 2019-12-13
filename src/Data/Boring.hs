@@ -85,9 +85,15 @@ import Data.Type.Dec         (Dec (..), Decidable (..))
 import Data.Stream.Infinite  (Stream (..))
 import GHC.Generics   hiding (Rep)
 
+import qualified Data.Bin                  as Bin
+import qualified Data.Bin.Pos              as Pos
+import qualified Data.BinP.PosP            as PosP
 import qualified Data.Fin                  as Fin
 import qualified Data.Nat                  as Nat
+import qualified Data.RAList.NonEmpty      as NERAList
+import qualified Data.RAVec                as RAVec
 import qualified Data.Singletons.Bool      as Bool
+import qualified Data.Type.Bin             as Bin
 import qualified Data.Type.Nat             as Nat
 import qualified Data.Type.Nat.LE          as ZeroSucc
 import qualified Data.Type.Nat.LE.ReflStep as ReflStep
@@ -225,21 +231,45 @@ instance n ~ ('Nat.S 'Nat.Z) => Boring (Fin.Fin n) where
 
 -- singletons are boring
 
--- | @since 0.1.3
+-- | @since 0.1.2
 instance Nat.SNatI n => Boring (Nat.SNat n) where
     boring = Nat.snat
 
--- | @since 0.1.3
+-- | @since 0.1.2
 instance Bool.SBoolI b => Boring (Bool.SBool b) where
     boring = Bool.sbool
 
--- | @since 0.1.3
+-- | @since 0.1.2
 instance ZeroSucc.LE n m => Boring (ZeroSucc.LEProof n m) where
     boring = ZeroSucc.leProof
 
--- | @since 0.1.3
+-- | @since 0.1.2
 instance (ZeroSucc.LE n m, Nat.SNatI m) => Boring (ReflStep.LEProof n m) where
     boring = ReflStep.fromZeroSucc ZeroSucc.leProof
+
+-------------------------------------------------------------------------------
+-- bin + ral
+-------------------------------------------------------------------------------
+
+-- | @since 0.1.3
+instance b ~ 'Bin.BZ => Boring (RAVec.RAVec b a) where
+    boring = RAVec.empty
+
+-- | @since 0.1.3
+instance b ~ 'Bin.BE => Boring (PosP.PosP b) where
+    boring = PosP.boring
+
+-- | @since 0.1.3
+instance b ~ 'Bin.BP 'Bin.BE => Boring (Pos.Pos b) where
+    boring = Pos.boring
+
+-- | @since 0.1.3
+instance Bin.SBinI b => Boring (Bin.SBin b) where
+    boring = Bin.sbin
+
+-- | @since 0.1.3
+instance Bin.SBinPI b => Boring (Bin.SBinP b) where
+    boring = Bin.sbinp
 
 -------------------------------------------------------------------------------
 -- Generics
@@ -322,6 +352,14 @@ instance (ZeroSucc.LE m n, n' ~ 'Nat.S n) => Absurd (ZeroSucc.LEProof n' m) wher
 
 instance (ZeroSucc.LE m n, n' ~ 'Nat.S n, Nat.SNatI n) => Absurd (ReflStep.LEProof n' m) where
     absurd = ZeroSucc.leSwap' ZeroSucc.leProof . ReflStep.toZeroSucc
+
+-- | @since 0.1.3
+instance b ~ 'Bin.BZ => Absurd (Pos.Pos b) where
+    absurd = Pos.absurd
+
+-- | @since 0.1.3
+instance Absurd a => Absurd (NERAList.NERAList a) where
+    absurd = absurd . NERAList.head
 
 -------------------------------------------------------------------------------
 -- Generics
