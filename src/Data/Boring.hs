@@ -226,7 +226,7 @@ instance n ~ 'Nat.Z => Boring (Vec.Vec n a) where
 instance n ~ 'Nat.Z => Boring (Vec.Pull.Vec n a) where
     boring = Vec.Pull.empty
 
-instance n ~ ('Nat.S 'Nat.Z) => Boring (Fin.Fin n) where
+instance n ~ 'Nat.S 'Nat.Z => Boring (Fin.Fin n) where
     boring = Fin.boring
 
 -- singletons are boring
