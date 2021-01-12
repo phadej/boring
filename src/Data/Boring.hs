@@ -108,6 +108,10 @@ import qualified Data.Type.Coercion as Co
 import qualified Data.Type.Equality as Eq
 #endif
 
+#if MIN_VERSION_base(4,10,0)
+import qualified Type.Reflection as Typeable
+#endif
+
 -------------------------------------------------------------------------------
 -- Boring
 -------------------------------------------------------------------------------
@@ -214,6 +218,11 @@ instance a ~ b => Boring (a Eq.:~: b) where
 instance a Eq.~~ b => Boring (a Eq.:~~: b) where
     boring = Eq.HRefl
 # endif
+#endif
+
+#if MIN_VERSION_base(4,10,0)
+instance Typeable.Typeable a => Boring (Typeable.TypeRep a) where
+    boring = Typeable.typeRep
 #endif
 
 -------------------------------------------------------------------------------
