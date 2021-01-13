@@ -102,11 +102,9 @@ import qualified Data.Vec.Pull             as Vec.Pull
 import qualified Data.Void                 as V
 import qualified Generics.SOP              as SOP
 
-#if MIN_VERSION_base(4,7,0)
 import qualified Data.Coerce        as Co
 import qualified Data.Type.Coercion as Co
 import qualified Data.Type.Equality as Eq
-#endif
 
 #if MIN_VERSION_base(4,10,0)
 import qualified Type.Reflection as Typeable
@@ -204,7 +202,6 @@ instance Absurd a => Boring [a] where
 instance Absurd a => Boring (Maybe a) where
     boring = Nothing
 
-#if MIN_VERSION_base(4,7,0)
 -- | Coercibility is 'Boring' too.
 instance Co.Coercible a b => Boring (Co.Coercion a b) where
     boring = Co.Coercion
@@ -213,12 +210,11 @@ instance Co.Coercible a b => Boring (Co.Coercion a b) where
 instance a ~ b => Boring (a Eq.:~: b) where
     boring = Eq.Refl
 
-# if MIN_VERSION_base(4,12,0)
+# if MIN_VERSION_base(4,10,0)
 -- | Heterogeneous type equality is 'Boring' too.
 instance a Eq.~~ b => Boring (a Eq.:~~: b) where
     boring = Eq.HRefl
 # endif
-#endif
 
 #if MIN_VERSION_base(4,10,0)
 instance Typeable.Typeable a => Boring (Typeable.TypeRep a) where
