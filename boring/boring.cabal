@@ -20,7 +20,9 @@ build-type:         Simple
 extra-source-files: ChangeLog.md
 cabal-version:      >=1.10
 tested-with:
-  GHC ==7.8.4
+  GHC ==7.4.2
+   || ==7.6.3
+   || ==7.8.4
    || ==7.10.3
    || ==8.0.2
    || ==8.2.2
@@ -47,24 +49,29 @@ flag tagged
 library
   exposed-modules:  Data.Boring
   build-depends:
-      base          >=4.7 && <4.16
+      base          >=4.5 && <4.16
     , transformers  >=0.3 && <0.6
 
+  if impl(ghc <7.6)
+    build-depends: ghc-prim
+  
+  if !impl(ghc >=7.8)
+    build-depends: type-equality >=1 && <1.1
+
   if !impl(ghc >=7.10)
-    build-depends: void >=0.7.2 && <0.8
+    build-depends: void >=0.7.3 && <0.8
 
   if !impl(ghc >=8.0)
     build-depends:
         semigroups           >=0.18.5 && <0.20
       , transformers-compat  >=0.5    && <0.7
 
-  if flag(tagged)
+  if flag(tagged) || !impl(ghc >=7.8)
     build-depends: tagged >=0.8.6 && <0.9
 
   other-extensions:
     CPP
     DefaultSignatures
-    EmptyCase
     FlexibleContexts
     GADTs
     Trustworthy
