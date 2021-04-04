@@ -128,7 +128,8 @@ jobs:
       - name: initial cabal.project for sdist
         run: |
           touch cabal.project
-          echo "packages: $GITHUB_WORKSPACE/source/." >> cabal.project
+          echo "packages: $GITHUB_WORKSPACE/source/boring" >> cabal.project
+          echo "packages: $GITHUB_WORKSPACE/source/boring-instances" >> cabal.project
           cat cabal.project
       - name: sdist
         run: |
@@ -142,14 +143,19 @@ jobs:
         run: |
           PKGDIR_boring="$(find "$GITHUB_WORKSPACE/unpacked" -maxdepth 1 -type d -regex '.*/boring-[0-9.]*')"
           echo "PKGDIR_boring=${PKGDIR_boring}" >> $GITHUB_ENV
+          PKGDIR_boring_instances="$(find "$GITHUB_WORKSPACE/unpacked" -maxdepth 1 -type d -regex '.*/boring-instances-[0-9.]*')"
+          echo "PKGDIR_boring_instances=${PKGDIR_boring_instances}" >> $GITHUB_ENV
           touch cabal.project
           touch cabal.project.local
           echo "packages: ${PKGDIR_boring}" >> cabal.project
+          echo "packages: ${PKGDIR_boring_instances}" >> cabal.project
           if [ $((HCNUMVER >= 80200)) -ne 0 ] ; then echo "package boring" >> cabal.project ; fi
+          if [ $((HCNUMVER >= 80200)) -ne 0 ] ; then echo "    ghc-options: -Werror=missing-methods" >> cabal.project ; fi
+          if [ $((HCNUMVER >= 80200)) -ne 0 ] ; then echo "package boring-instances" >> cabal.project ; fi
           if [ $((HCNUMVER >= 80200)) -ne 0 ] ; then echo "    ghc-options: -Werror=missing-methods" >> cabal.project ; fi
           cat >> cabal.project <<EOF
           EOF
-          $HCPKG list --simple-output --names-only | perl -ne 'for (split /\s+/) { print "constraints: $_ installed\n" unless /^(boring)$/; }' >> cabal.project.local
+          $HCPKG list --simple-output --names-only | perl -ne 'for (split /\s+/) { print "constraints: $_ installed\n" unless /^(boring|boring-instances)$/; }' >> cabal.project.local
           cat cabal.project
           cat cabal.project.local
       - name: dump install plan
@@ -176,6 +182,8 @@ jobs:
         run: |
           cd ${PKGDIR_boring} || false
           ${CABAL} -vnormal check
+          cd ${PKGDIR_boring_instances} || false
+          ${CABAL} -vnormal check
       - name: haddock
         run: |
           $CABAL v2-haddock $ARG_COMPILER --with-haddock $HADDOCK $ARG_TESTS $ARG_BENCH all
@@ -183,3 +191,9 @@ jobs:
         run: |
           rm -f cabal.project.local
           $CABAL v2-build $ARG_COMPILER --disable-tests --disable-benchmarks all
+      - name: prepare for constraint sets
+        run: |
+          rm -f cabal.project.local
+      - name: constraint set no-tagged
+        run: |
+          $CABAL v2-build $ARG_COMPILER --disable-tests --disable-benchmarks --constraint='boring -tagged' all

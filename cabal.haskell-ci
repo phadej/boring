@@ -1,1 +1,4 @@
 branches: master
+
+constraint-set no-tagged
+  constraints: boring -tagged

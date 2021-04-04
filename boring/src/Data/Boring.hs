@@ -1,12 +1,9 @@
 {-# LANGUAGE CPP              #-}
-{-# LANGUAGE DataKinds        #-}
 {-# LANGUAGE EmptyCase        #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs            #-}
+{-# LANGUAGE Trustworthy      #-}
 {-# LANGUAGE TypeOperators    #-}
-{-# LANGUAGE ConstraintKinds  #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE UndecidableInstances #-}
 -- | 'Boring' and 'Absurd' classes. One approach.
 --
 -- Different approach would be to have
@@ -57,50 +54,22 @@ module Data.Boring (
     Absurd (..),
     -- * More interesting stuff
     vacuous,
-    boringRep,
-    untainted,
     devoid,
     united,
-    -- ** Dec
-    --
-    -- | @'Dec' a@ can be 'Boring' in two ways: When 'a' is 'Boring' or 'Absurd'.
-    boringYes,
-    absurdNo,
-    ) where
+) where
 
-import Prelude ()
-import Prelude.Compat
+import Prelude (Either (..), Functor (..), Maybe (..), const, (.))
 
-import Control.Applicative   (Const (..))
-import Data.Functor.Identity (Identity (..))
+import Control.Applicative   (Const (..), (<$))
 import Data.Functor.Compose  (Compose (..))
+import Data.Functor.Identity (Identity (..))
 import Data.Functor.Product  (Product (..))
 import Data.Functor.Sum      (Sum (..))
-import Data.Functor.Rep      (Representable (..))
-import Data.Constraint       (Dict (..))
 import Data.List.NonEmpty    (NonEmpty (..))
 import Data.Proxy            (Proxy (..))
-import Data.Tagged           (Tagged (..))
-import Data.Type.Dec         (Dec (..), Decidable (..))
-import Data.Stream.Infinite  (Stream (..))
-import GHC.Generics   hiding (Rep)
+import GHC.Generics          hiding (Rep)
 
-import qualified Data.Bin                  as Bin
-import qualified Data.Bin.Pos              as Pos
-import qualified Data.BinP.PosP            as PosP
-import qualified Data.Fin                  as Fin
-import qualified Data.Nat                  as Nat
-import qualified Data.RAList.NonEmpty      as NERAList
-import qualified Data.RAVec                as RAVec
-import qualified Data.Singletons.Bool      as Bool
-import qualified Data.Type.Bin             as Bin
-import qualified Data.Type.Nat             as Nat
-import qualified Data.Type.Nat.LE          as ZeroSucc
-import qualified Data.Type.Nat.LE.ReflStep as ReflStep
-import qualified Data.Vec.Lazy             as Vec
-import qualified Data.Vec.Pull             as Vec.Pull
-import qualified Data.Void                 as V
-import qualified Generics.SOP              as SOP
+import qualified Data.Void as V
 
 import qualified Data.Coerce        as Co
 import qualified Data.Type.Coercion as Co
@@ -108,6 +77,10 @@ import qualified Data.Type.Equality as Eq
 
 #if MIN_VERSION_base(4,10,0)
 import qualified Type.Reflection as Typeable
+#endif
+
+#ifdef MIN_VERSION_tagged
+import Data.Tagged           (Tagged (..))
 #endif
 
 -------------------------------------------------------------------------------
@@ -158,26 +131,19 @@ instance Boring (Proxy a) where
 instance Boring a => Boring (Const a b) where
     boring = Const boring
 
+#ifdef MIN_VERSION_tagged
 instance Boring b => Boring (Tagged a b) where
     boring = Tagged boring
+#endif
 
 instance Boring a => Boring (Identity a) where
     boring = Identity boring
-
-instance Boring a => Boring (SOP.I a) where
-    boring = SOP.I boring
-
-instance Boring b => Boring (SOP.K b a) where
-    boring = SOP.K boring
 
 instance Boring (f (g a)) => Boring (Compose f g a) where
     boring = Compose boring
 
 instance (Boring (f a), Boring (g a)) => Boring (Product f g a) where
     boring = Pair boring boring
-
-instance c => Boring (Dict c) where
-    boring = Dict
 
 instance (Boring a, Boring b) => Boring (a, b) where
     boring = (boring, boring)
@@ -190,9 +156,6 @@ instance (Boring a, Boring b, Boring c, Boring d) => Boring (a, b, c, d) where
 
 instance (Boring a, Boring b, Boring c, Boring d, Boring e) => Boring (a, b, c, d, e) where
     boring = (boring, boring, boring, boring, boring)
-
-instance Boring a => Boring (Stream a) where
-    boring = boring :> boring
 
 -- | Recall regular expressions, kleene star of empty regexp is epsilon!
 instance Absurd a => Boring [a] where
@@ -220,61 +183,6 @@ instance a Eq.~~ b => Boring (a Eq.:~~: b) where
 instance Typeable.Typeable a => Boring (Typeable.TypeRep a) where
     boring = Typeable.typeRep
 #endif
-
--------------------------------------------------------------------------------
--- vec + fin + singleton-bool
--------------------------------------------------------------------------------
-
-instance n ~ 'Nat.Z => Boring (Vec.Vec n a) where
-    boring = Vec.empty
-
-instance n ~ 'Nat.Z => Boring (Vec.Pull.Vec n a) where
-    boring = Vec.Pull.empty
-
-instance n ~ 'Nat.S 'Nat.Z => Boring (Fin.Fin n) where
-    boring = Fin.boring
-
--- singletons are boring
-
--- | @since 0.1.2
-instance Nat.SNatI n => Boring (Nat.SNat n) where
-    boring = Nat.snat
-
--- | @since 0.1.2
-instance Bool.SBoolI b => Boring (Bool.SBool b) where
-    boring = Bool.sbool
-
--- | @since 0.1.2
-instance ZeroSucc.LE n m => Boring (ZeroSucc.LEProof n m) where
-    boring = ZeroSucc.leProof
-
--- | @since 0.1.2
-instance (ZeroSucc.LE n m, Nat.SNatI m) => Boring (ReflStep.LEProof n m) where
-    boring = ReflStep.fromZeroSucc ZeroSucc.leProof
-
--------------------------------------------------------------------------------
--- bin + ral
--------------------------------------------------------------------------------
-
--- | @since 0.1.3
-instance b ~ 'Bin.BZ => Boring (RAVec.RAVec b a) where
-    boring = RAVec.empty
-
--- | @since 0.1.3
-instance b ~ 'Bin.BE => Boring (PosP.PosP b) where
-    boring = PosP.boring
-
--- | @since 0.1.3
-instance b ~ 'Bin.BP 'Bin.BE => Boring (Pos.Pos b) where
-    boring = Pos.boring
-
--- | @since 0.1.3
-instance Bin.SBinI b => Boring (Bin.SBin b) where
-    boring = Bin.sbin
-
--- | @since 0.1.3
-instance Bin.SBinPI b => Boring (Bin.SBinP b) where
-    boring = Bin.sbinp
 
 -------------------------------------------------------------------------------
 -- Generics
@@ -324,9 +232,6 @@ instance (Absurd a, Absurd b) => Absurd (Either a b) where
 instance Absurd a => Absurd (NonEmpty a) where
     absurd (x :| _) = absurd x
 
-instance Absurd a => Absurd (Stream a) where
-    absurd (x :> _) = absurd x
-
 instance Absurd a => Absurd (Identity a) where
     absurd = absurd . runIdentity
 
@@ -340,31 +245,10 @@ instance (Absurd (f a), Absurd (g a)) => Absurd (Sum f g a) where
 instance Absurd b => Absurd (Const b a) where
     absurd = absurd . getConst
 
+#ifdef MIN_VERSION_tagged
 instance Absurd a => Absurd (Tagged b a) where
     absurd = absurd . unTagged
-
-instance Absurd a => Absurd (SOP.I a) where
-    absurd = absurd . SOP.unI
-
-instance Absurd b => Absurd (SOP.K b a) where
-    absurd = absurd . SOP.unK
-
-instance n ~ 'Nat.Z => Absurd (Fin.Fin n) where
-    absurd = Fin.absurd
-
-instance (ZeroSucc.LE m n, n' ~ 'Nat.S n) => Absurd (ZeroSucc.LEProof n' m) where
-    absurd = ZeroSucc.leSwap' ZeroSucc.leProof
-
-instance (ZeroSucc.LE m n, n' ~ 'Nat.S n, Nat.SNatI n) => Absurd (ReflStep.LEProof n' m) where
-    absurd = ZeroSucc.leSwap' ZeroSucc.leProof . ReflStep.toZeroSucc
-
--- | @since 0.1.3
-instance b ~ 'Bin.BZ => Absurd (Pos.Pos b) where
-    absurd = Pos.absurd
-
--- | @since 0.1.3
-instance Absurd a => Absurd (NERAList.NERAList a) where
-    absurd = absurd . NERAList.head
+#endif
 
 -------------------------------------------------------------------------------
 -- Generics
@@ -401,16 +285,6 @@ instance Absurd (f (g p)) => Absurd ((f :.: g) p) where
 vacuous :: (Functor f, Absurd a) => f a -> f b
 vacuous = fmap absurd
 
--- | If an index of 'Representable' @f@ is 'Absurd', @f a@ is 'Boring'.
-boringRep :: (Representable f, Absurd (Rep f)) => f a
-boringRep = tabulate absurd
-
--- | If an index of 'Representable' @f@ is 'Boring', @f@ is isomorphic to 'Identity'.
---
--- See also @Settable@ class in @lens@.
-untainted :: (Representable f, Boring (Rep f)) => f a -> a
-untainted = flip index boring
-
 -- | There is a field for every type in the 'Absurd'. Very zen.
 --
 -- @
@@ -427,25 +301,3 @@ devoid _ = absurd
 -- @
 united :: (Boring a, Functor f) => (a -> f a) -> s -> f s
 united f v = v <$ f boring
-
--------------------------------------------------------------------------------
--- Dec
--------------------------------------------------------------------------------
-
--- | This relies on the fact that @a@ is /proposition/ in h-Prop sense.
---
--- @since 0.1.3
-instance Decidable a => Boring (Dec a) where
-    boring = decide
-
--- | 'Yes', it's 'boring'.
---
--- @since 0.1.3
-boringYes :: Boring a => Dec a
-boringYes = Yes boring
-
--- | 'No', it's 'absurd'.
---
--- @since 0.1.3
-absurdNo :: Absurd a => Dec a
-absurdNo = No absurd

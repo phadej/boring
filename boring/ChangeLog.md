@@ -1,5 +1,13 @@
 # Revision history for boring
 
+## 0.2
+
+- Make `boring` package dependency light.
+  `fin`, `bin`, `ral`, `vec`, `dec`, `singleton-bool` instances
+  are migrated to corresponding packages.
+  Rest are migrated to `boring-instances` for now.
+- Data.Boring is `Trustworthy`
+
 ## 0.1.3
 
 - Allow `vec-0.3`

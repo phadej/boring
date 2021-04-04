@@ -1,4 +1,5 @@
-packages: .
+packages: boring
+packages: boring-instances
 
 package boring
   ghc-options: -Wall
