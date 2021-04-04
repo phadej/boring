@@ -7,6 +7,7 @@
   are migrated to corresponding packages.
   Rest are migrated to `boring-instances` for now.
 - Data.Boring is `Trustworthy`
+- Add Generic derivation. Thanks to David Feuer.
 
 ## 0.1.3
 
