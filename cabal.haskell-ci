@@ -1,5 +1,6 @@
-branches: master
-docspec:  True
+branches:       master
+docspec:        True
+jobs-selection: any
 
 constraint-set no-tagged
   constraints: boring -tagged

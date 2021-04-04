@@ -48,6 +48,10 @@ jobs:
             allow-failure: false
           - compiler: ghc-7.8.4
             allow-failure: false
+          - compiler: ghc-7.6.3
+            allow-failure: false
+          - compiler: ghc-7.4.2
+            allow-failure: false
       fail-fast: false
     steps:
       - name: apt
@@ -138,7 +142,7 @@ jobs:
         run: |
           touch cabal.project
           echo "packages: $GITHUB_WORKSPACE/source/boring" >> cabal.project
-          echo "packages: $GITHUB_WORKSPACE/source/boring-instances" >> cabal.project
+          if [ $((HCNUMVER >= 70800)) -ne 0 ] ; then echo "packages: $GITHUB_WORKSPACE/source/boring-instances" >> cabal.project ; fi
           cat cabal.project
       - name: sdist
         run: |
@@ -157,7 +161,7 @@ jobs:
           touch cabal.project
           touch cabal.project.local
           echo "packages: ${PKGDIR_boring}" >> cabal.project
-          echo "packages: ${PKGDIR_boring_instances}" >> cabal.project
+          if [ $((HCNUMVER >= 70800)) -ne 0 ] ; then echo "packages: ${PKGDIR_boring_instances}" >> cabal.project ; fi
           if [ $((HCNUMVER >= 80200)) -ne 0 ] ; then echo "package boring" >> cabal.project ; fi
           if [ $((HCNUMVER >= 80200)) -ne 0 ] ; then echo "    ghc-options: -Werror=missing-methods" >> cabal.project ; fi
           if [ $((HCNUMVER >= 80200)) -ne 0 ] ; then echo "package boring-instances" >> cabal.project ; fi
@@ -195,8 +199,8 @@ jobs:
         run: |
           cd ${PKGDIR_boring} || false
           ${CABAL} -vnormal check
-          cd ${PKGDIR_boring_instances} || false
-          ${CABAL} -vnormal check
+          if [ $((HCNUMVER >= 70800)) -ne 0 ] ; then cd ${PKGDIR_boring_instances} || false ; fi
+          if [ $((HCNUMVER >= 70800)) -ne 0 ] ; then ${CABAL} -vnormal check ; fi
       - name: haddock
         run: |
           $CABAL v2-haddock $ARG_COMPILER --with-haddock $HADDOCK $ARG_TESTS $ARG_BENCH all
