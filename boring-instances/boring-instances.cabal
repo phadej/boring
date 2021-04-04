@@ -1,0 +1,54 @@
+name:               boring-instances
+version:            0.2
+synopsis:           Boring and Absurd types: instances
+description:
+  * @Boring@ types are isomorphic to @()@.
+  . 
+  * @Absurd@ types are isomorphic to @Void@.
+  .
+  See [What does () mean in Haskell -answer by Conor McBride](https://stackoverflow.com/questions/33112439/what-does-mean-in-haskell/33115522#33115522)
+  .
+  This package contains instances which were previously in @boring@ package itself,
+  and yet haven't migrated to non-orphan place.
+
+homepage:           https://github.com/phadej/boring
+bug-reports:        https://github.com/phadej/boring/issues
+license:            BSD3
+license-file:       LICENSE
+author:             Oleg Grenrus <oleg.grenrus@iki.fi>
+maintainer:         Oleg.Grenrus <oleg.grenrus@iki.fi>
+copyright:          (c) 2017-2021 Oleg Grenrus
+category:           Data
+build-type:         Simple
+cabal-version:      >=1.10
+tested-with:
+  GHC ==7.8.4
+   || ==7.10.3
+   || ==8.0.2
+   || ==8.2.2
+   || ==8.4.4
+   || ==8.6.5
+   || ==8.8.4
+   || ==8.10.4
+   || ==9.0.1
+
+source-repository head
+  type:     git
+  location: https://github.com/phadej/boring.git
+  subdir:   boring-instances
+
+library
+  exposed-modules:  Data.Boring.Instances
+
+  -- boot libraries
+  build-depends:    base >=4.7 && <4.16
+
+  -- orphans
+  build-depends:
+      boring        >=0.2     && <0.2.1
+    , constraints   >=0.13    && <0.13.1
+    , generics-sop  >=0.3.2.0 && <0.5.2
+    , streams       >=3.3     && <3.3.1
+
+  hs-source-dirs:   src
+  default-language: Haskell2010
