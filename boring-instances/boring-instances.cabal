@@ -46,9 +46,7 @@ library
   -- orphans
   build-depends:
       boring        >=0.2     && <0.2.1
-    , constraints   >=0.13    && <0.13.1
     , generics-sop  >=0.3.2.0 && <0.5.2
-    , streams       >=3.3     && <3.3.1
 
   hs-source-dirs:   src
   default-language: Haskell2010
