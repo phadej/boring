@@ -4,8 +4,8 @@
 module Data.Boring.Instances () where
 
 import Data.Boring          (Absurd (..), Boring (..))
-import Data.Constraint      (Dict (..))
-import Data.Stream.Infinite (Stream (..))
+-- import Data.Constraint      (Dict (..))
+-- import Data.Stream.Infinite (Stream (..))
 
 import qualified Generics.SOP as SOP
 
