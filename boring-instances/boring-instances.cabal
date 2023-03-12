@@ -41,7 +41,7 @@ library
   exposed-modules:  Data.Boring.Instances
 
   -- boot libraries
-  build-depends:    base >=4.7 && <4.18
+  build-depends:    base >=4.7 && <4.19
 
   -- orphans
   build-depends:
