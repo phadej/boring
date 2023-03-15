@@ -1,5 +1,10 @@
 # Revision history for boring
 
+## 0.2.1
+
+-  Add instances for `SNat`, `SSymbol`, and `SChar`
+   (singletons introduced in `base-4.18.0.0`)
+
 ## 0.2
 
 - Make `boring` package dependency light.

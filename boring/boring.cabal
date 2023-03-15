@@ -1,6 +1,5 @@
 name:               boring
-version:            0.2
-x-revision:         3
+version:            0.2.1
 synopsis:           Boring and Absurd types
 description:
   * @Boring@ types are isomorphic to @()@.
