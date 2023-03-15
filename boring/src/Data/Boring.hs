@@ -92,6 +92,11 @@ import qualified Data.Type.Equality as Eq
 import qualified Type.Reflection as Typeable
 #endif
 
+#if MIN_VERSION_base(4,18,0)
+import qualified GHC.TypeLits as TypeLits
+import qualified GHC.TypeNats as TypeNats
+#endif
+
 #ifdef MIN_VERSION_tagged
 import Data.Tagged (Tagged (..))
 #endif
@@ -203,6 +208,17 @@ instance a Eq.~~ b => Boring (a Eq.:~~: b) where
 #if MIN_VERSION_base(4,10,0)
 instance Typeable.Typeable a => Boring (Typeable.TypeRep a) where
     boring = Typeable.typeRep
+#endif
+
+#if MIN_VERSION_base(4,18,0)
+instance TypeLits.KnownChar n => Boring (TypeLits.SChar n) where
+    boring = TypeLits.charSing
+
+instance TypeLits.KnownSymbol n => Boring (TypeLits.SSymbol n) where
+    boring = TypeLits.symbolSing
+
+instance TypeNats.KnownNat n => Boring (TypeNats.SNat n) where
+    boring = TypeNats.natSing
 #endif
 
 -------------------------------------------------------------------------------
