@@ -3,7 +3,7 @@ version:            0.2
 synopsis:           Boring and Absurd types: instances
 description:
   * @Boring@ types are isomorphic to @()@.
-  . 
+  .
   * @Absurd@ types are isomorphic to @Void@.
   .
   See [What does () mean in Haskell -answer by Conor McBride](https://stackoverflow.com/questions/33112439/what-does-mean-in-haskell/33115522#33115522)
@@ -29,8 +29,13 @@ tested-with:
    || ==8.4.4
    || ==8.6.5
    || ==8.8.4
-   || ==8.10.4
-   || ==9.0.1
+   || ==8.10.7
+   || ==9.0.2
+   || ==9.2.8
+   || ==9.4.8
+   || ==9.6.5
+   || ==9.8.2
+   || ==9.10.1
 
 source-repository head
   type:     git
@@ -41,11 +46,11 @@ library
   exposed-modules:  Data.Boring.Instances
 
   -- boot libraries
-  build-depends:    base >=4.7 && <4.18
+  build-depends:    base >=4.7 && <4.21
 
   -- orphans
   build-depends:
-      boring        >=0.2     && <0.2.1
+      boring        >=0.2     && <0.2.2
     , generics-sop  >=0.3.2.0 && <0.5.2
 
   hs-source-dirs:   src
