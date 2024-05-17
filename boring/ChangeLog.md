@@ -1,5 +1,9 @@
 # Revision history for boring
 
+## 0.2.2
+
+- Support GHC-8.6.5...9.10.1
+
 ## 0.2.1
 
 -  Add instances for `SNat`, `SSymbol`, and `SChar`

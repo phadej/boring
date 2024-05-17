@@ -4,9 +4,7 @@
 {-# LANGUAGE GADTs             #-}
 {-# LANGUAGE Trustworthy       #-}
 {-# LANGUAGE TypeOperators     #-}
-#if __GLASGOW_HASKELL >= 708
 {-# LANGUAGE EmptyCase         #-}
-#endif
 -- | 'Boring' and 'Absurd' classes. One approach.
 --
 -- Different approach would be to have
@@ -79,18 +77,12 @@ import GHC.Generics
 
 import qualified Data.Void as V
 
-#if __GLASGOW_HASKELL >= 708
 import qualified Data.Coerce        as Co
 import qualified Data.Type.Coercion as Co
-#else
-import Prelude (seq, error)
-#endif
 
 import qualified Data.Type.Equality as Eq
 
-#if MIN_VERSION_base(4,10,0)
 import qualified Type.Reflection as Typeable
-#endif
 
 #if MIN_VERSION_base(4,18,0)
 import qualified GHC.TypeLits as TypeLits
@@ -189,26 +181,20 @@ instance Absurd a => Boring [a] where
 instance Absurd a => Boring (Maybe a) where
     boring = Nothing
 
-#if __GLASGOW_HASKELL >= 708
 -- | Coercibility is 'Boring' too.
 instance Co.Coercible a b => Boring (Co.Coercion a b) where
     boring = Co.Coercion
-#endif
 
 -- | Homogeneous type equality is 'Boring' too.
 instance a ~ b => Boring (a Eq.:~: b) where
     boring = Eq.Refl
 
-# if MIN_VERSION_base(4,10,0)
 -- | Heterogeneous type equality is 'Boring' too.
 instance a Eq.~~ b => Boring (a Eq.:~~: b) where
     boring = Eq.HRefl
-# endif
 
-#if MIN_VERSION_base(4,10,0)
 instance Typeable.Typeable a => Boring (Typeable.TypeRep a) where
     boring = Typeable.typeRep
-#endif
 
 #if MIN_VERSION_base(4,18,0)
 instance TypeLits.KnownChar n => Boring (TypeLits.SChar n) where
@@ -295,11 +281,7 @@ instance Absurd a => Absurd (Tagged b a) where
 -------------------------------------------------------------------------------
 
 instance Absurd (V1 p) where
-#if __GLASGOW_HASKELL >= 708
     absurd v = case v of {}
-#else
-    absurd v = v `seq` error "absurd @(V1 p)"
-#endif
 
 instance Absurd c => Absurd (K1 i c p) where
     absurd = absurd . unK1
@@ -399,11 +381,7 @@ class GAbsurd f where
     gabsurd :: f a -> b
 
 instance GAbsurd V1 where
-#if __GLASGOW_HASKELL >= 708
     gabsurd x = case x of {}
-#else
-    gabsurd x = x `seq` error "gabsurd @V1"
-#endif
 
 instance GAbsurd f => GAbsurd (M1 i c f) where
     gabsurd (M1 x) = gabsurd x
