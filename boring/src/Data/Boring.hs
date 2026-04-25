@@ -186,7 +186,11 @@ instance Co.Coercible a b => Boring (Co.Coercion a b) where
     boring = Co.Coercion
 
 -- | Homogeneous type equality is 'Boring' too.
+#if MIN_VERSION_base(4,17,0)
+instance a Eq.~ b => Boring (a Eq.:~: b) where
+#else
 instance a ~ b => Boring (a Eq.:~: b) where
+#endif
     boring = Eq.Refl
 
 -- | Heterogeneous type equality is 'Boring' too.
