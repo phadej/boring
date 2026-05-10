@@ -1,7 +1,6 @@
 cabal-version:      2.2
 name:               boring
-version:            0.2.2
-x-revision:         1
+version:            0.2.2.1
 synopsis:           Boring and Absurd types
 description:
   * @Boring@ types are isomorphic to @()@.
@@ -29,8 +28,9 @@ tested-with:
    || ==9.4.8
    || ==9.6.6
    || ==9.8.4
-   || ==9.10.1
-   || ==9.12.1
+   || ==9.10.3
+   || ==9.12.2
+   || ==9.14.1
 
 source-repository head
   type:     git
@@ -49,8 +49,7 @@ flag tagged
 library
   exposed-modules:  Data.Boring
   build-depends:
-      base          >=4.12.0.0 && <4.22
-    , transformers  >=0.5.6.2  && <0.7
+      base          >=4.12.0.0 && <4.23
 
   if impl(ghc <7.6)
     build-depends: ghc-prim
